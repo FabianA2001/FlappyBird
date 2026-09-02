@@ -29,7 +29,7 @@ void Sensor::draw(sf::RenderTarget &target, sf::RenderStates states) const {
     }
 }
 
-void Sensor::updateHitPoint(sf::Vector2f point, const std::vector<std::shared_ptr<Pipe>> &pipes) {
+void Sensor::updateHitPoint(sf::Vector2f point, std::deque<std::shared_ptr<Pipe>> pipes) {
     this->startPoint = point;
     this->hitPoint = point;
     auto it = begin(pipes);
@@ -47,6 +47,10 @@ void Sensor::updateHitPoint(sf::Vector2f point, const std::vector<std::shared_pt
             return;
         }
         helperFunktions::addVector2f(point, steps);
+        if (point.y >= constants::engine::resolution.y || point.y < 0) {
+            this->hitPoint = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+            break;
+        }
         if (point.x > (*it)->getX() + constants::pipe::pipeWidth) {
             it++;
         }
@@ -62,8 +66,5 @@ float Sensor::getDistance() const {
 
     auto x = std::abs(startPoint.x - hitPoint.x);
     auto y = std::abs(startPoint.y - hitPoint.y);
-    return sqrt(pow(x, 2) + pow(y, 2));
+    return (sqrt(pow(x, 2) + pow(y, 2))) + 1;
 }
-
-
-

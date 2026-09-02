@@ -3,7 +3,7 @@
 
 void BreakScene::input(sf::Event event) {
     if (event.key.code == constants::input::resumeBreak) {
-        *status = constants::gameState::RUNNIING;
+        *status = aktiveScene;
         drawn = false;
     }
 }
@@ -20,8 +20,10 @@ void BreakScene::draw() {
     }
 }
 
-BreakScene::BreakScene(std::shared_ptr<sf::RenderWindow> window, std::shared_ptr<constants::gameState> status) : Scene(
-        window, status), drawn(false) {
+BreakScene::BreakScene(std::shared_ptr<sf::RenderWindow> window,
+                       std::shared_ptr<constants::gameState> status,
+                       std::shared_ptr<constants::ResourceHolder> resourceHolder)
+        : Scene(window, status, resourceHolder), drawn(false) {
     font.loadFromFile(constants::text::path);
     text.setFont(font);
     text.setCharacterSize(constants::text::textSize);

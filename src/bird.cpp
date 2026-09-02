@@ -1,11 +1,8 @@
 #include "bird.h"
 
-Bird::Bird(const sf::Vector2u &windowSize)
-        : windowSize(windowSize), velocity(0) {
-    birdUp.loadFromFile(constants::bird::path, constants::bird::birdUpArea);
-    birdDown.loadFromFile(constants::bird::path, constants::bird::birdDownArea);
-
-    birdSprite.setTexture(birdUp);
+Bird::Bird(std::shared_ptr<constants::ResourceHolder> resourceHolder)
+        : velocity(0), death(false), score(0), resourceHolder(resourceHolder) {
+    birdSprite.setTexture(this->resourceHolder->birdUp);
     birdTextureIsUp = true;
 
     birdSprite.setScale({constants::bird::scale, constants::bird::scale});
@@ -16,14 +13,14 @@ Bird::Bird(const sf::Vector2u &windowSize)
 
 void Bird::changeToBirdUp() {
     if (!birdTextureIsUp) {
-        birdSprite.setTexture(birdUp);
+        birdSprite.setTexture(resourceHolder->birdUp);
         birdTextureIsUp = true;
     }
 }
 
 void Bird::changeToBirdDown() {
     if (birdTextureIsUp) {
-        birdSprite.setTexture(birdDown);
+        birdSprite.setTexture(resourceHolder->birdDown);
         birdTextureIsUp = false;
     }
 }
@@ -54,8 +51,8 @@ void Bird::checkPostionBounds() {
         position.y = 0;
     }
 
-    if (position.y > (float) windowSize.y - birdSprite.getGlobalBounds().height) {
-        position.y = (float) windowSize.y - birdSprite.getGlobalBounds().height;
+    if (position.y > (float) constants::engine::resolution.y - birdSprite.getGlobalBounds().height) {
+        position.y = (float) constants::engine::resolution.y - birdSprite.getGlobalBounds().height;
     }
 }
 
@@ -80,10 +77,12 @@ float Bird::checkVelocityBounds(float num) {
 
 void Bird::setVelocity(float num) {
     velocity = checkVelocityBounds(num);
+    changeYWithCurrentVelocity();
 }
 
 void Bird::changeVelocity(float num) {
     velocity = checkVelocityBounds(velocity += num);
+    changeYWithCurrentVelocity();
 }
 
 void Bird::changeYWithCurrentVelocity() {
@@ -110,5 +109,42 @@ sf::Vector2f Bird::getSchnabelPostion() const {
     auto pos = getPostion();
     helperFunktions::addVector2f(pos, {constants::bird::birdWidth, constants::bird::birdHeight / 2});
     return pos;
+}
+
+void Bird::setDeath() {
+    this->death = true;
+}
+
+bool Bird::getDeath() const {
+    return death;
+}
+
+
+int Bird::getScore() const {
+    return score;
+}
+
+void Bird::incrementScore(int score) {
+    this->score += score;
+}
+
+//Bird &Bird::operator=(const Bird &other) {
+//    birdSprite = other.birdSprite;
+//    birdTextureIsUp = other.birdTextureIsUp;
+//    position = other.position;
+//    velocity = other.velocity;
+//    score = other.score;
+//    death = other.death;
+//    return *this;
+//}
+
+void Bird::reset() {
+    death = false;
+    score = 0;
+    position = constants::bird::startPos;
+}
+
+float Bird::getVelocity() const {
+    return velocity;
 }
 

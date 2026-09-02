@@ -6,6 +6,7 @@
 #include "pipe.h"
 #include <deque>
 #include <vector>
+#include <memory>
 
 class Sensor : public sf::Drawable {
 //funktions
@@ -16,7 +17,7 @@ public:
 
     sf::Vector2f getHitPoint() const;
 
-    void updateHitPoint(sf::Vector2f point, const std::vector<std::shared_ptr<Pipe>> &pipes);
+    void updateHitPoint(sf::Vector2f point, std::deque<std::shared_ptr<Pipe>> pipes);
 
     float getDistance() const;
 

@@ -9,49 +9,55 @@
 #include <deque>
 
 class RunningScene : public Scene {
-
+protected:
     enum Direktion {
         FORWARD, BACKWARD
     };
 //funktions
 public:
-    RunningScene(std::shared_ptr<sf::RenderWindow> window, std::shared_ptr<constants::gameState> status);
+    RunningScene(std::shared_ptr<sf::RenderWindow> window,
+                 std::shared_ptr<constants::gameState> status,
+                 std::shared_ptr<constants::ResourceHolder> resourceHolder);
 
     void reset();
 
+    virtual void deepReset() = 0;
+
 //funktions
 protected:
-    void input(sf::Event event) override;
 
     void update() override;
 
+    virtual void deepUpdate() = 0;
+
     void draw() override;
 
-private:
-    void addStartetPipes();
+    virtual void deepDraw() = 0;
 
-    static int dirketionToInt(Direktion direktion);
+    void input(sf::Event event) override;
+
+    virtual void deepInput(sf::Event event) = 0;
+
+    void addStartPipes();
+
+    static int directionToInt(RunningScene::Direktion direktion);
 
     void findeAktivePipe(const std::shared_ptr<Pipe> &pipe);
 
+    void findNextPipe(const std::shared_ptr<Pipe> &pipe);
+
+    void findSecondNextPipe(const std::shared_ptr<Pipe> pipe);
 
     void drawPipeDebug(std::weak_ptr<Pipe> pipe, sf::Color color);
 
 //variables
-private:
-
-    Bird bird;
-
-    sf::Time timeSinceLastBirdMove;
-
+protected:
+    sf::Time timeSinceLastUpdateCycle;
     std::deque<std::shared_ptr<Pipe>> pipes;
     std::weak_ptr<Pipe> aktivePipe;
-
+    std::weak_ptr<Pipe> nextPipe;
+    std::weak_ptr<Pipe> secondNextPipe;
     Direktion direktion;
+    float pipeDistanceMultiplayer = 1;
 
-    std::vector<Sensor> sensoren;
-
-    int score;
-    sf::Font font;
-    sf::Text scoreText;
 };

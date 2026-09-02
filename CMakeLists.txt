@@ -10,7 +10,6 @@ add_executable(FlappyBird src/main.cpp src/engine.cpp
         src/pipe.cpp
         headers/pipe.h
         src/pipe.cpp
-        headers/constants.h
         src/helperFunktions.cpp
         src/scene.cpp
         headers/scene.h
@@ -24,8 +23,15 @@ add_executable(FlappyBird src/main.cpp src/engine.cpp
         headers/ghostpipe.h
         src/gameoverscene.cpp
         headers/gameoverscene.h
-        headers/sensor.cpp
+        src/sensor.cpp
         headers/sensor.h
+        src/network.cpp
+        headers/network.h
+        src/runningsceneplayer.cpp
+        headers/runningsceneplayer.h
+        src/runningscenebot.cpp
+        src/constants.cpp
+        headers/constants.h
 )
 
 #Warning check if correct Path

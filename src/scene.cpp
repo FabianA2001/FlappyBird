@@ -16,6 +16,14 @@ void Scene::run(const sf::Time &timeSinceLast) {
             if (event.key.code == constants::input::closeButton) {
                 window->close();
             }
+            if (event.key.code == constants::input::botScene) {
+                aktiveScene = constants::gameState::RUNNINGBOT;
+                *status = aktiveScene;
+            }
+            if (event.key.code == constants::input::playerScene) {
+                aktiveScene = constants::gameState::RUNNIINGPLAYER;
+                *status = aktiveScene;
+            }
             input(event);
         }
     }
@@ -25,5 +33,7 @@ void Scene::run(const sf::Time &timeSinceLast) {
     draw();
 }
 
-Scene::Scene(std::shared_ptr<sf::RenderWindow> window, std::shared_ptr<constants::gameState> status)
-        : window(window), status(status) {}
+Scene::Scene(std::shared_ptr<sf::RenderWindow> window,
+             std::shared_ptr<constants::gameState> status,
+             std::shared_ptr<constants::ResourceHolder> resourceHolder)
+        : window(window), status(status), resourceHolder(resourceHolder) {}

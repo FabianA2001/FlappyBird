@@ -5,10 +5,12 @@ Engine::Engine()
         sf::VideoMode(constants::engine::resolution.x, constants::engine::resolution.y),
         constants::engine::titel,
         sf::Style::Close)),
-          status(std::make_shared<constants::gameState>(constants::gameState::RUNNIING)),
-          runningScene(window, status),
-          breakScene(window, status),
-          gameOverScene(window, status) {
+          status(std::make_shared<constants::gameState>(constants::engine::aktiveSceneStart)),
+          resourceHolder(std::make_shared<constants::ResourceHolder>()),
+          runningScenePlayer(window, status, resourceHolder),
+          runningSceneBot(window, status, resourceHolder),
+          breakScene(window, status, resourceHolder),
+          gameOverScene(window, status, resourceHolder) {
     window->setFramerateLimit(constants::engine::fps);
 
 }
@@ -18,14 +20,17 @@ void Engine::run() {
     while (window->isOpen()) {
         auto timeSinceLastMove = clock.restart();
         switch (*status) {
-            case constants::gameState::RUNNIING:
-                runningScene.run(timeSinceLastMove);
+            case constants::gameState::RUNNIINGPLAYER:
+                runningScenePlayer.run(timeSinceLastMove);
+                break;
+            case constants::gameState::RUNNINGBOT:
+                runningSceneBot.run(timeSinceLastMove);
                 break;
             case constants::gameState::PAUSED:
                 breakScene.run(timeSinceLastMove);
                 break;
             case constants::gameState::GAMEOVER: {
-                runningScene.reset();
+                runningScenePlayer.reset();
                 gameOverScene.run(timeSinceLastMove);
                 break;
             }

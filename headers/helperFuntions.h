@@ -3,6 +3,7 @@
 #include <iostream>
 #include <random>
 #include <SFML/Graphics.hpp>
+#include <memory>
 
 namespace detail {
     template<typename T, typename... Tail>
@@ -22,7 +23,16 @@ namespace helperFunktions {
         std::cout << std::endl;
     }
 
-    float randomNum(sf::Vector2f range);
+    void print(const std::vector<float> &vec);
+
+    float randomInt(sf::Vector2f range);
+
+    float randomFloat(const float LO, const float HI);
 
     sf::Vector2f addVector2f(sf::Vector2f &left, const sf::Vector2f &right);
+
+    //return number between 0 and 1
+    float sigmoid(float num);
+
+    void drawHorizontalLine(const sf::Vector2f &pos, std::shared_ptr<sf::RenderWindow> window);
 }

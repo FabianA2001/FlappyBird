@@ -1,91 +1,45 @@
 #include "runningscene.h"
 #include <string>
 
-void RunningScene::input(sf::Event event) {
-    if (event.key.code == constants::input::pauseButton) {
-        *status = constants::gameState::PAUSED;
-    }
-    if (event.key.code == constants::input::jumpButton) {
-        bird.setVelocity(constants::bird::jumpVelocity);
-    }
-    if (event.key.code == constants::input::changeDirection) {
-        if (direktion == FORWARD) {
-            direktion = BACKWARD;
-        } else if (direktion == BACKWARD) {
-            direktion = FORWARD;
-        }
-    }
-}
-
 void RunningScene::update() {
-    timeSinceLastBirdMove += timeSinceLast;
-    if (timeSinceLastBirdMove.asSeconds() < constants::engine::updateCycle) {
+    timeSinceLastUpdateCycle += timeSinceLast;
+    if (timeSinceLastUpdateCycle.asSeconds() < constants::engine::updateCycle) {
         return;
     }
 
-
-    //movePipe and find relevant pipe
+    aktivePipe.reset();
     for (auto const &pipe: pipes) {
-        pipe->changeX(constants::pipe::pipeStepPerUpdate * dirketionToInt(direktion));
+        pipe->changeX(constants::pipe::pipeStepPerUpdate * directionToInt(direktion) * pipeDistanceMultiplayer);
         findeAktivePipe(pipe);
-    }
-
-    //update score
-    if (not aktivePipe.expired() && not aktivePipe.lock()->getAktive()) {
-        score++;
-        scoreText.setString(constants::text::textScorePrefix + std::to_string(score));
-        aktivePipe.lock()->setAktive();
+        findNextPipe(pipe);
+        findSecondNextPipe(pipe);
     }
 
     //delete and generate Pipes
     if (pipes.back()->getX() > (float) constants::pipe::pipesDistance * constants::pipe::startAmountPipes) {
         pipes.pop_back();
-        pipes.push_front(std::make_shared<Pipe>(-constants::pipe::pipesDistance));
+        pipes.push_front(std::make_shared<Pipe>(-constants::pipe::pipesDistance, resourceHolder));
     }
-
     if (pipes.front()->getX() < (float) -constants::pipe::pipesDistance) {
         pipes.pop_front();
-        pipes.push_back(std::make_shared<Pipe>(constants::pipe::pipesDistance * constants::pipe::startAmountPipes));
+        pipes.push_back(std::make_shared<Pipe>(constants::pipe::pipesDistance * constants::pipe::startAmountPipes,
+                                               resourceHolder));
     }
 
-    //check for gameover
-    if (not aktivePipe.expired() && aktivePipe.lock()->collisionOnY(bird)) {
-        *status = constants::gameState::GAMEOVER;
-    }
 
-    // wenn ich die Pipes direkt als degue übergebe werden die pointer nicht übegeben
-    std::vector<std::shared_ptr<Pipe>> pipesVector;
-    for (const auto &pipe: pipes) {
-        pipesVector.emplace_back(pipe);
-    }
-    for (auto &sensor: sensoren) {
-        sensor.updateHitPoint(bird.getSchnabelPostion(), pipesVector);
-    }
-    
-    //change Bird y
-    bird.changeVelocity(constants::bird::stepChangeVelocityPerUpdate);
-    bird.changeYWithCurrentVelocity();
-
-    timeSinceLastBirdMove = sf::Time::Zero;
+    deepUpdate();
+    timeSinceLastUpdateCycle = sf::Time::Zero;
 
 }
 
 void RunningScene::draw() {
-    window->clear(sf::Color::White);
+    window->clear(constants::engine::background);
 
-    window->draw(bird);
     for (auto const &pipe: pipes) {
         window->draw(*pipe);
     }
 
-
-
-    //Debug
-    drawPipeDebug(aktivePipe, sf::Color::Black);
-    for (const auto &sensor: sensoren)
-        window->draw(sensor);
-
-    window->draw(scoreText);
+    deepDraw();
 
     window->display();
 }
@@ -105,66 +59,78 @@ void RunningScene::drawPipeDebug(std::weak_ptr<Pipe> pipe, sf::Color color) {
 }
 
 
-RunningScene::RunningScene(std::shared_ptr<sf::RenderWindow> window, std::shared_ptr<constants::gameState> status)
-        : Scene(window, status), bird(window->getSize()), direktion(FORWARD), score(0) {
-
-    font.loadFromFile(constants::text::path);
-    scoreText.setFont(font);
-    scoreText.setCharacterSize(constants::text::textSize);
-    scoreText.setFillColor(constants::text::textColor);
-    scoreText.setPosition(constants::text::scorePos);
-    scoreText.setString(constants::text::textScorePrefix + "0");
-
-    addStartetPipes();
-    sensoren.emplace_back(Sensor({2, -1}));
-    sensoren.emplace_back(Sensor({4, -1}));
-    sensoren.emplace_back(Sensor({1, 0}));
-    sensoren.emplace_back(Sensor({4, 1}));
-    sensoren.emplace_back(Sensor({2, 1}));
+RunningScene::RunningScene(std::shared_ptr<sf::RenderWindow> window,
+                           std::shared_ptr<constants::gameState> status,
+                           std::shared_ptr<constants::ResourceHolder> resourceHolder)
+        : Scene(window, status, resourceHolder), direktion(FORWARD) {
+    addStartPipes();
 }
 
-void RunningScene::addStartetPipes() {
+void RunningScene::addStartPipes() {
+    int const MID = constants::pipe::startAmountPipes / 2;
     for (int i = -1; i < constants::pipe::startAmountPipes; i++) {
-        pipes.push_back(std::__1::make_shared<GhostPipe>((float) i * constants::pipe::pipesDistance));
+        if (i == MID - 1) {
+            pipes.push_back(std::make_shared<GhostPipe>((float) i * constants::pipe::pipesDistance, resourceHolder));
+        } else {
+            pipes.push_back(std::make_shared<Pipe>((float) i * constants::pipe::pipesDistance, resourceHolder));
+        }
     }
 }
 
 void RunningScene::reset() {
     direktion = FORWARD;
-    score = 0;
-    bird.setPosition(constants::bird::startPos);
     pipes.clear();
-    addStartetPipes();
+    addStartPipes();
+    deepReset();
 }
 
-int RunningScene::dirketionToInt(RunningScene::Direktion direktion) {
+int RunningScene::directionToInt(RunningScene::Direktion direktion) {
     switch (direktion) {
         case FORWARD:
             return 1;
         case BACKWARD:
             return -1;
+        default: {
+            helperFunktions::print("RunningScene directionToInt triggers default case, but der are only two types");
+            return 0;
+        }
     }
 }
 
 void RunningScene::findeAktivePipe(const std::shared_ptr<Pipe> &pipe) {
-    if (pipe->getX() + constants::pipe::pipeWidth == constants::bird::startPos.x) {
-        switch (direktion) {
-            case FORWARD:
-                aktivePipe.reset();
-                break;
-            case BACKWARD:
-                aktivePipe = pipe;
-                break;
-        }
-    } else if (pipe->getX() == constants::bird::startPos.x + constants::bird::birdWidth) {
-        switch (direktion) {
-            case FORWARD:
-                aktivePipe = pipe;
-                break;
-            case BACKWARD:
-                aktivePipe.reset();
-                break;
-        }
+    if (pipe->getX() < constants::bird::startPos.x + constants::bird::birdWidth &&
+        pipe->getX() + constants::pipe::pipeWidth > constants::bird::startPos.x) {
+        aktivePipe = pipe;
     }
+}
 
+void RunningScene::findNextPipe(const std::shared_ptr<Pipe> &pipe) {
+    if (pipe->getX() < constants::bird::startPos.x) {
+        return;
+    }
+    if (pipe->getX() + constants::bird::birdWidth + 10 > constants::bird::startPos.x + constants::pipe::pipesDistance) {
+        return;
+    }
+    nextPipe = pipe;
+}
+
+void RunningScene::input(sf::Event event) {
+    if (event.key.code == constants::input::slower) {
+        pipeDistanceMultiplayer *= 0.5;
+    }
+    if (event.key.code == constants::input::faster) {
+        pipeDistanceMultiplayer *= 2;
+    }
+    deepInput(event);
+}
+
+void RunningScene::findSecondNextPipe(const std::shared_ptr<Pipe> pipe) {
+    if (pipe->getX() < constants::bird::startPos.x + constants::pipe::pipesDistance) {
+        return;
+    }
+    if (pipe->getX() + constants::bird::birdWidth + 10 >
+        constants::bird::startPos.x + constants::pipe::pipesDistance * 2) {
+        return;
+    }
+    secondNextPipe = pipe;
 }
